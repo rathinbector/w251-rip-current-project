@@ -39,6 +39,10 @@ from datetime import timedelta
 import pytz
 import smtplib, ssl
 from email.message import EmailMessage
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from PIL import Image
 
 @torch.no_grad()
 def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
@@ -111,8 +115,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     port = 465  # For SSL
     smtp_server = "smtp.gmail.com"
     sender_email = "riptide.detection@gmail.com"
-    receiver_email = "riptide.detection@gmail.com"  # Enter receiver address
-    password = input("Type your password and press enter: ")
+    password = input("Enter password for riptide.detection@gmail.com: ")
+    receiver_email = input("Enter email that should be notified when rip current is detected: ")
 
     normalize = T.Normalize((0.5, 0.5, 0.5), (0.25, 0.25, 0.25))
     dt, seen = [0.0, 0.0], 0
@@ -140,13 +144,21 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         dt[1] += t3 - t2
         seen += 1
         now = datetime.now(pytz.timezone('US/Pacific'))
-        if (sum(last_frames) == frames) & ((now-last_rip) > seconds_between_notifications) :
+        if (result[0] == 1) & (sum(last_frames) >= 0.9*frames) & ((now-last_rip) > seconds_between_notifications) :
             dt_string = now.strftime("%m/%d/%Y %H:%M:%S")
-            msg = EmailMessage()
-            msg.set_content("Rip Current Detected at " + dt_string)
+            msg = MIMEMultipart()
             msg['Subject'] = 'Rip Current Detected'
             msg['From'] = sender_email
             msg['To'] = receiver_email
+            
+            text = MIMEText("Rip Current Detected at " + dt_string)
+            msg.attach(text)
+            Image.fromarray(im0s[0][:,:,::-1]).save('frame.png')
+            fp = open('frame.png', 'rb')
+            image = MIMEImage(fp.read())
+            msg.attach(image)
+            fp.close()
+            
             context = ssl.create_default_context()
             server = smtplib.SMTP_SSL(smtp_server, port, context=context)
             server.login(sender_email, password)
