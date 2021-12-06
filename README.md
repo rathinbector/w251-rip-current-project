@@ -16,6 +16,6 @@ docker run -it --gpus all rbector/w251-rip-current-project
 ```
 5. Start rip current detection program on the docker container, providing the appropriate input youtube stream.
 ```bash
-python detect.py --source <youtube_stream_url> --weights best_more_without.pt --frames 300
+python detect.py --source <youtube_stream_url> --weights best.pt --frames 90
 ```
 6. Provide `riptide.detection@gmail.com` password and notificatione email when prompted.
