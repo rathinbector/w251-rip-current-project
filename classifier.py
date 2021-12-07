@@ -83,10 +83,10 @@ def train():
     trainform = T.Compose([
                            T.RandomGrayscale(p=0.01),
                            T.RandomHorizontalFlip(p=0.5),
-                           # T.RandomAffine(degrees=1, translate=(.2, .2), scale=(1 / 1.5, 1.5),
-                           #                shear=(-1, 1, -1, 1), fill=(114, 114, 114)),
-                           T.RandomAffine(degrees=90, translate=(.2, .2), scale=(1 / 1.5, 1.5),
+                           T.RandomAffine(degrees=1, translate=(.2, .2), scale=(1 / 1.5, 1.5),
                                           shear=(-1, 1, -1, 1), fill=(114, 114, 114)),
+                           # T.RandomAffine(degrees=90, translate=(.2, .2), scale=(1 / 1.5, 1.5),
+                           #                shear=(-1, 1, -1, 1), fill=(114, 114, 114)),
                            T.Resize([imgsz, imgsz]),  # very slow
                            T.ToTensor(),
                            T.Normalize((0.5, 0.5, 0.5), (0.25, 0.25, 0.25))])  # PILImage from [0, 1] to [-1, 1]
@@ -109,7 +109,7 @@ def train():
     # Model
     if opt.model.startswith('yolov5'):
         # YOLOv5 Classifier
-        model = torch.hub.load('ultralytics/yolov5', opt.model, pretrained=True, autoshape=False)
+        model = torch.hub.load('ultralytics/yolov5', opt.model, pretrained=True, autoshape=False).model
         model.model = model.model[:8]
         m = model.model[-1]  # last layer
         ch = m.conv.in_channels if hasattr(m, 'conv') else sum([x.in_channels for x in m.m])  # ch into module
@@ -118,6 +118,7 @@ def train():
         model.model[-1] = c  # replace
         for p in model.parameters():
             p.requires_grad = True  # for training
+        input(model)
     elif opt.model in torch.hub.list('rwightman/gen-efficientnet-pytorch'):  # i.e. efficientnet_b0
         model = torch.hub.load('rwightman/gen-efficientnet-pytorch', opt.model, pretrained=True)
         model.classifier = nn.Linear(model.classifier.in_features, nc)
@@ -268,28 +269,37 @@ if __name__ == '__main__':
     opt.hyp = check_file(opt.hyp)  # check files
     opt.save_dir = increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok | opt.evolve)  # increment run
 
-    # Train
-    train()
+    # # Train
+    # train()
 
-    # # The following code below integrates with the test function
-    # model = torch.load('../drive/MyDrive/best_more_without.pt')['model'].cpu().float()
-    # model = model.to(device)
-    # data = opt.data
-    # imgsz = opt.img_size
-    # bs = opt.batch_size
-    # nw = min(os.cpu_count(), opt.workers)
-    # # Transforms
-    # testform = T.Compose([
-    #                        T.Resize([imgsz, imgsz]),  # very slow
-    #                        T.ToTensor(),
-    #                        T.Normalize((0.5, 0.5, 0.5), (0.25, 0.25, 0.25))])  # PILImage from [0, 1] to [-1, 1]
+    # The following code below integrates with the test function
+    data = opt.data
+    imgsz = opt.img_size
+    bs = opt.batch_size
+    nw = min(os.cpu_count(), opt.workers)
+    # Transforms
+    testform = T.Compose([
+                           T.Resize([imgsz, imgsz]),  # very slow
+                           T.ToTensor(),
+                           T.Normalize((0.5, 0.5, 0.5), (0.25, 0.25, 0.25))])  # PILImage from [0, 1] to [-1, 1]
 
-    # # Dataloaders
-    # trainset = torchvision.datasets.ImageFolder(root=f'../{data}/train', transform=trainform)
-    # trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=nw)
-    # testset = torchvision.datasets.ImageFolder(root=f'../{data}/test', transform=testform)
-    # testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False, num_workers=nw)
-    # names = trainset.classes
-    # nc = len(names)
-    # print(f'Testing {opt.model} on {data} dataset with {nc} classes...')
-    # test(model, testloader, names, verbose=True)
+    # Dataloader
+    testset = torchvision.datasets.ImageFolder(root=f'../{data}/test', transform=testform)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False, num_workers=nw)
+    names = testset.classes
+    nc = len(names)
+    if opt.model.startswith('yolov5'):
+        # YOLOv5 Classifier
+        model = torch.hub.load('ultralytics/yolov5', opt.model, pretrained=True, autoshape=False).model
+        model.model = model.model[:8]
+        m = model.model[-1]  # last layer
+        ch = m.conv.in_channels if hasattr(m, 'conv') else sum([x.in_channels for x in m.m])  # ch into module
+        c = Classify(ch, nc)  # Classify()
+        c.i, c.f, c.type = m.i, m.f, 'models.common.Classify'  # index, from, type
+        model.model[-1] = c  # replace
+    else:
+        model = torch.load(opt.model)['model'].cpu().float()
+    model = model.to(device)
+    
+    print(f'Testing {opt.model} on {data} dataset with {nc} classes...')
+    test(model, testloader, names, verbose=True)
