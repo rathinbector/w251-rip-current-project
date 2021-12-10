@@ -44,7 +44,9 @@ python3 tello.py
 ```
 12. On the machine that is connected to the internet, run FFMPEG pipline
 ```bash
-ffmpeg -f lavfi -i anullsrc -rtsp_transport udp -i rtsp://192.168.55.1:6969/hermes -tune zerolatency -vcodec libx264 -t 12:00:00 -pix_fmt + -c:v copy -c:a aac -strict experimental -f flv rtmp://a.rtmp.youtube.com/live2/f6ju-uy7a-uw1m-utk1-7mt2
+ffmpeg -f lavfi -i anullsrc -rtsp_transport udp -i rtsp://192.168.55.1:6969/hermes -tune/
+zerolatency -vcodec libx264 -t 12:00:00 -pix_fmt + -c:v copy -c:a aac -strict experimental/
+-f flv rtmp://a.rtmp.youtube.com/live2/f6ju-uy7a-uw1m-utk1-7mt2
 ```
 
 Drone Commands
