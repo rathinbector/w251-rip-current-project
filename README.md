@@ -63,4 +63,6 @@ zerolatency -vcodec libx264 -t 12:00:00 -pix_fmt + -c:v copy -c:a aac -strict ex
 - s -> Move down
 - d -> Move right
 
+## Model Misc. Details
+
 The train.ipynb has the training results.  The test.ipynb has the test/double check results.  The classifier.py file has comments for the train and test functions.
