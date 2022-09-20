@@ -3,6 +3,9 @@
 
 This is a repo for our final project in W251 in the MIDS program. We attempt to detect riptides from video streams of the coast.
 
+## Project Summary
+For a summary of the project, please look at the [W251 Final Project: Rip Current Detection](https://docs.google.com/presentation/d/1cRvLUCE01V2IBDijsyxvaHMqgmTQJe6WvVo3G55jlkQ/edit?usp=sharing) presentation.
+
 ## Model Inference on the Cloud
 1. Provision a `g4dn.2xlarge` instance on the cloud, using the Deep Learning AMI (Ubuntu 18.04) Version 52.0 as a base image. Expose port 22 for ssh
 2. Ssh into the new instance on shell
